@@ -1,6 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Collections.Generic;
-
+//==========================================================
+// Student Number : S10273266D
+// Student Name : Matthew Tay
+// Partner Name : Jovan Soo
+//==========================================================
 public class Menu
 {
     private string MenuId;

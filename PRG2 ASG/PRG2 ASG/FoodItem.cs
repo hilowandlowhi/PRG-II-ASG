@@ -1,5 +1,9 @@
 ﻿// See https://aka.ms/new-console-template for more information
-
+//==========================================================
+// Student Number : S10273266D
+// Student Name : Matthew Tay
+// Partner Name : Jovan Soo
+//==========================================================
 public class FoodItem
 {
     private string ItemName;

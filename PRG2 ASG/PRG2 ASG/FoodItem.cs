@@ -1,0 +1,25 @@
+﻿// See https://aka.ms/new-console-template for more information
+
+public class FoodItem
+{
+    private string ItemName;
+    private string ItemDesc;
+    private double ItemPrice;
+
+    public FoodItem(string name, string desc, double price)
+    {
+        ItemName = name;
+        ItemDesc = desc;
+        ItemPrice = price;
+    }
+
+    // Getters (needed by Menu when displaying later)
+    public string GetItemName() => ItemName;
+    public string GetItemDesc() => ItemDesc;
+    public double GetItemPrice() => ItemPrice;
+
+    public override string ToString()
+    {
+        return $"{ItemName}: {ItemDesc} - ${ItemPrice:0.00}";
+    }
+}

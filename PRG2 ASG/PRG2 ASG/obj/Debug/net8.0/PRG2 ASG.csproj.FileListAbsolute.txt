@@ -1,0 +1,15 @@
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\bin\Debug\net8.0\PRG2 ASG.exe
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\bin\Debug\net8.0\PRG2 ASG.deps.json
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\bin\Debug\net8.0\PRG2 ASG.runtimeconfig.json
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\bin\Debug\net8.0\PRG2 ASG.dll
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\bin\Debug\net8.0\PRG2 ASG.pdb
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\PRG2 ASG.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\PRG2 ASG.AssemblyInfoInputs.cache
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\PRG2 ASG.AssemblyInfo.cs
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\PRG2 ASG.csproj.CoreCompileInputs.cache
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\PRG2 ASG.sourcelink.json
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\PRG2 ASG.dll
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\refint\PRG2 ASG.dll
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\PRG2 ASG.pdb
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\PRG2 ASG.genruntimeconfig.cache
+C:\Users\matth\Desktop\DL\PRG2 ALL\PRG2 CODE FOR FINALE\PRG2 ASG\PRG2 ASG\obj\Debug\net8.0\ref\PRG2 ASG.dll

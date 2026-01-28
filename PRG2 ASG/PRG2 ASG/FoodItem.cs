@@ -9,12 +9,15 @@ public class FoodItem
     private string ItemName;
     private string ItemDesc;
     private double ItemPrice;
+    private string customise;
 
+    public FoodItem(string name) { ItemName = name; }
     public FoodItem(string name, string desc, double price)
     {
         ItemName = name;
         ItemDesc = desc;
         ItemPrice = price;
+        customise = "";
     }
 
     // Getters (needed by Menu when displaying later)

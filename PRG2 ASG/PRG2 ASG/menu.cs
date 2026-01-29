@@ -34,7 +34,7 @@ public class Menu
     public void DisplayFoodItems()
     {
         foreach (var item in FoodItems)
-            System.Console.WriteLine("- " + item);
+            System.Console.WriteLine("  - " + item);
     }
 
     public override string ToString()

@@ -29,8 +29,12 @@ class Program
         Console.WriteLine($"{customers.Count} customers loaded!");
         Console.WriteLine($"{orderCount} orders loaded!");
 
+        // Step 3: Display all restaurants and menu items
+        DisplayAllRestaurantsAndMenuItems(restaurants);
+
     }
 
+    // Load restaurants from CSV file
     static Dictionary<string, Restaurant> LoadRestaurants(string file)
     {       
         if (!File.Exists(file))
@@ -58,6 +62,7 @@ class Program
         return restaurants;
     }
 
+    // Load food items from CSV file
     static int LoadFoodItems(string file, Dictionary<string, Restaurant> restaurants)
     {
         if (!File.Exists(file))
@@ -92,6 +97,7 @@ class Program
         return count;
     }
 
+    // Load customers from CSV file
     static List<Customer> LoadCustomers(string file)
     {
     
@@ -122,6 +128,7 @@ class Program
 
     }
 
+    // Load orders from CSV file
     static int LoadOrders()
     {
         int count = 0;
@@ -198,5 +205,20 @@ class Program
             count++;
         }
         return count;
+    }
+
+    // Display all restaurants and their menu items
+    static void DisplayAllRestaurantsAndMenuItems(Dictionary<string, Restaurant> restaurants)
+    {
+        Console.WriteLine();
+        Console.WriteLine("All Restaurants and Menu Items");
+        Console.WriteLine("==============================");
+
+        // Display each restaurant and its menu
+        foreach (Restaurant restaurant in restaurants.Values)
+        {
+            restaurant.DisplayMenu();
+            Console.WriteLine();
+        }
     }
 }

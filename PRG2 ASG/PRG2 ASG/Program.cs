@@ -10,9 +10,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Mail;
+using System.Runtime.InteropServices.Marshalling;
 
 class Program
 {
+    // For Step 4, Use name to reference email
+    static Dictionary<string, Customer> customersByEmail = new Dictionary<string, Customer>();
+    static List<Order> allOrders = new List<Order>();
+    static Dictionary<int, string> orderCustomerEmail = new Dictionary<int, string>();
+    static Dictionary<int, string> orderRestaurantId = new Dictionary<int, string>();
+    static Dictionary<string, string> restaurantNameById = new Dictionary<string, string>();
+
     static void Main()
     {
         // Step 1: Load restaurants and food items
@@ -23,7 +31,7 @@ class Program
         Console.WriteLine($"{foodItemsLoaded} food items loaded!");
 
         // Step 2: Load customers and orders
-        List<Customer> customers = LoadCustomers("customers.csv");
+        Dictionary<string, Customer> customers = LoadCustomers("customers.csv");
         int orderCount = LoadOrders();
 
         Console.WriteLine($"{customers.Count} customers loaded!");
@@ -32,6 +40,8 @@ class Program
         // Step 3: Display all restaurants and menu items
         DisplayAllRestaurantsAndMenuItems(restaurants);
 
+        // Step 4: Display All Orders Made
+        DisplayAllOrders();
     }
 
     // Load restaurants from CSV file
@@ -55,6 +65,8 @@ class Program
             string id = parts[0].Trim();
             string name = parts[1].Trim();
             string email = parts[2].Trim();
+                
+            restaurantNameById[id] = name;
 
             restaurants[id] = new Restaurant(id, name, email);
         }
@@ -98,13 +110,13 @@ class Program
     }
 
     // Load customers from CSV file
-    static List<Customer> LoadCustomers(string file)
+    static Dictionary<string, Customer> LoadCustomers(string file) // Changed to Dictionary For Step 4
     {
     
         if (!File.Exists(file))
             throw new FileNotFoundException($"File not found: {file}");
 
-        List<Customer> customers = new List<Customer>();
+        Dictionary<string, Customer> customers = new Dictionary<string, Customer>();
 
         using StreamReader sr = new StreamReader(file);
         sr.ReadLine(); // Skip header
@@ -120,8 +132,12 @@ class Program
             string name = parts[0].Trim();
             string email = parts[1].Trim();
 
-            Customer customer = new Customer(email, name);
-            customers.Add(customer);
+           
+
+
+            customers[name] = new Customer(email, name);
+
+            customersByEmail[email] = customers[name];
 
         }
         return customers;
@@ -184,6 +200,15 @@ class Program
                 false
             );
 
+            allOrders.Add(order);
+            orderCustomerEmail[orderId] = customerEmail;
+            orderRestaurantId[orderId] = restaurantId;
+
+            if (customersByEmail.ContainsKey(customerEmail))
+            {
+                customersByEmail[customerEmail].Orders.Add(order);
+            }
+
             string[] orderedItems = itemsColumn.Split('|');
 
             foreach (string orderedItem in orderedItems)
@@ -221,4 +246,40 @@ class Program
             Console.WriteLine();
         }
     }
-}
+
+    // Display All Orders 
+    static void DisplayAllOrders()
+    {
+        Console.WriteLine();
+        Console.WriteLine("All Orders");
+        Console.WriteLine("==========");
+        Console.WriteLine("Order ID    Customer      Restaurant       Delivery Date/Time   Amount    Status");
+        Console.WriteLine("--------    ----------    -------------    ------------------   ------    ---------");
+
+        foreach (Order o in allOrders)
+        {
+            // Assign the data value for each column(Order Id, Customoer...)
+            string email = orderCustomerEmail.ContainsKey(o.OrderId) ? orderCustomerEmail[o.OrderId] : "";
+            string restaurant = orderRestaurantId.ContainsKey(o.OrderId) ? orderRestaurantId[o.OrderId] : "";
+
+            string custName = customersByEmail.ContainsKey(email) ? customersByEmail[email].CustomerName : "";
+
+            string restName = restaurantNameById.ContainsKey(restaurant) ? restaurantNameById[restaurant] : "";
+
+            string amountText = $"${o.OrderTotal:0.00}"; // Sticks the $ sign with the amount
+
+            Console.WriteLine($"{o.OrderId,-12}{custName,-14}{restName,-17}{o.DeliveryDateTime,-20:dd/MM/yyyy HH:mm} {amountText,-7}   {o.OrderStatus}");
+
+        }
+
+
+
+
+
+
+
+
+
+    }
+
+    }

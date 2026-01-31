@@ -8,6 +8,7 @@
 //==========================================================
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net.Mail;
 using System.Runtime.InteropServices.Marshalling;
@@ -20,11 +21,12 @@ class Program
     static Dictionary<int, string> orderCustomerEmail = new Dictionary<int, string>();
     static Dictionary<int, string> orderRestaurantId = new Dictionary<int, string>();
     static Dictionary<string, string> restaurantNameById = new Dictionary<string, string>();
-
+    static Dictionary<string, Restaurant> allRestaurants = new Dictionary<string, Restaurant>();
     static void Main()
     {
         // Step 1: Load restaurants and food items
         Dictionary<string, Restaurant> restaurants = LoadRestaurants("restaurants.csv");
+        allRestaurants = restaurants;
         int foodItemsLoaded = LoadFoodItems("fooditems.csv", restaurants);
 
         Console.WriteLine($"{restaurants.Count} restaurants loaded!");
@@ -42,6 +44,9 @@ class Program
 
         // Step 4: Display All Orders Made
         DisplayAllOrders();
+
+        // Step 5: Create a New Order
+        CreateNewOrder();
     }
 
     // Load restaurants from CSV file
@@ -171,6 +176,7 @@ class Program
                     field += c;
             }
             fields.Add(field);
+            // Now fields contains all columns for the current line
             int orderId = int.Parse(fields[0]);
             string customerEmail = fields[1];
             string restaurantId = fields[2];
@@ -204,6 +210,7 @@ class Program
             orderCustomerEmail[orderId] = customerEmail;
             orderRestaurantId[orderId] = restaurantId;
 
+            // Add order to customer's order list
             if (customersByEmail.ContainsKey(customerEmail))
             {
                 customersByEmail[customerEmail].Orders.Add(order);
@@ -211,6 +218,7 @@ class Program
 
             string[] orderedItems = itemsColumn.Split('|');
 
+            // Add ordered food items to the order
             foreach (string orderedItem in orderedItems)
             {
                 string[] parts = orderedItem.Split(',');
@@ -222,8 +230,7 @@ class Program
                 int quantity = int.Parse(parts[1].Trim());
 
                 FoodItem foodItem = new FoodItem(itemName);
-                OrderedFoodItem orderedFoodItem =
-                    new OrderedFoodItem(foodItem, quantity);
+                OrderedFoodItem orderedFoodItem = new OrderedFoodItem(foodItem, quantity);
 
                 order.AddOrderedFoodItem(orderedFoodItem);
             }
@@ -272,14 +279,185 @@ class Program
 
         }
 
+    }
+    static void CreateNewOrder()
+    {
+        Console.WriteLine();
+        Console.WriteLine("Create New Order");
+        Console.WriteLine("================");
 
+        // Get customer email
+        Console.Write("Enter Customer Email: ");
+        string customerEmail = Console.ReadLine();
 
+        // Get restaurant ID
+        Console.Write("Enter Restaurant ID: ");
+        string restaurantId = Console.ReadLine().Trim();
 
+        // Get delivery date and time
+        Console.Write("Enter Delivery Date (dd/mm/yyyy): ");
+        string deliveryDateStr = Console.ReadLine();
+        Console.Write("Enter Delivery Time (hh:mm): ");
+        string deliveryTimeStr = Console.ReadLine();
 
+        // Get delivery address
+        Console.Write("Enter Delivery Address: ");
+        string deliveryAddress = Console.ReadLine();
 
+        Console.WriteLine();
 
+        // Validate restaurant ID
+        if (!allRestaurants.ContainsKey(restaurantId))
+        {
+            Console.WriteLine("Invalid Restaurant ID.");
+            return;
+        }
 
+        // Get the restaurant and display its menu
+        Restaurant selectedRestaurant = allRestaurants[restaurantId];
+        Console.WriteLine("Available Food Items:");
+        Menu menu = selectedRestaurant.GetMenu();
+        menu.DisplayFoodItemsNumbered();
+        List<FoodItem> items = menu.FoodItems;
+        Console.WriteLine();
 
+        // Allow user to select items
+        List<OrderedFoodItem> orderedItems = new List<OrderedFoodItem>();
+        double subtotal = 0;
+
+        while (true)
+        {
+            Console.Write("Enter item number (0 to finish): ");
+            string input = Console.ReadLine();
+            int itemNumber = int.Parse(input);
+
+            if (itemNumber == 0)
+                break;
+
+            if (itemNumber < 1 || itemNumber > items.Count)
+            {
+                Console.WriteLine("Invalid item number.");
+                continue;
+            }
+
+            Console.Write("Enter quantity: ");
+            int quantity = int.Parse(Console.ReadLine());
+
+            FoodItem selectedItem = items[itemNumber - 1];
+            OrderedFoodItem orderedItem = new OrderedFoodItem(selectedItem, quantity);
+            orderedItems.Add(orderedItem);
+
+            subtotal += selectedItem.ItemPrice * quantity;
+        }
+
+        // Ask for special request
+        Console.Write("Add special request? [Y/N]: ");
+        string specialRequestChoice = Console.ReadLine().ToUpper();
+
+        string specialRequest = null;
+        if (specialRequestChoice == "Y")
+        {
+            Console.Write("Enter special request: ");
+            specialRequest = Console.ReadLine();
+        }
+
+        // Calculate order total (subtotal + delivery fee)
+        double deliveryFee = 5.00;
+        double orderTotal = subtotal + deliveryFee;
+
+        // Display order summary
+        Console.WriteLine();
+        Console.WriteLine($"Order Total: ${subtotal:F2} + ${deliveryFee:F2} (delivery) = ${orderTotal:F2}");
+
+        // Ask for payment method
+        Console.Write("Proceed to payment? [Y/N]: ");
+        string proceedChoice = Console.ReadLine().ToUpper();
+
+        if (proceedChoice != "Y")
+        {
+            Console.WriteLine("Order cancelled.");
+            return;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Payment method:");
+        Console.Write("[CC] Credit Card / [PP] Paypal / [CD] Cash on Delivery: ");
+        string paymentMethod = Console.ReadLine().ToUpper();
+
+        string paymentMethodFull = "";
+        switch (paymentMethod)
+        {
+            case "CC":
+                paymentMethodFull = "Credit Card";
+                break;
+            case "PP":
+                paymentMethodFull = "Paypal";
+                break;
+            case "CD":
+                paymentMethodFull = "Cash on Delivery";
+                break;
+            default:
+                Console.WriteLine("Invalid payment method.");
+                return;
+        }
+
+        // Generate a new order ID
+        int newOrderId = allOrders.Count > 0 ? allOrders[allOrders.Count - 1].OrderId + 1 : 1001;
+        DateTime deliveryDateTime = DateTime.Parse($"{deliveryDateStr} {deliveryTimeStr}");
+
+        // Create the new order
+        Order newOrder = new Order(
+            newOrderId,
+            DateTime.Now,
+            orderTotal,
+            "Pending",
+            deliveryDateTime,
+            deliveryAddress,
+            paymentMethodFull,
+            false
+        );
+
+        // Add ordered food items to the order
+        foreach (var orderedItem in orderedItems)
+        {
+            newOrder.AddOrderedFoodItem(orderedItem);
+        }
+
+        // Update tracking dictionaries
+        allOrders.Add(newOrder);
+        orderCustomerEmail[newOrderId] = customerEmail;
+        orderRestaurantId[newOrderId] = restaurantId;
+
+        // Add order to customer's order list
+        if (customersByEmail.ContainsKey(customerEmail))
+        {
+            customersByEmail[customerEmail].AddOrder(newOrder);
+        }
+
+        // Append to orders.csv
+        string itemsString = "";
+        foreach (var item in orderedItems)
+        {
+            if (itemsString.Length > 0)
+                itemsString += "|";
+            itemsString += $"{item.FoodItem.ItemName},{item.QtyOrdered}";
+        }
+
+        string orderLine = $"{newOrderId},{customerEmail},{restaurantId}," +
+                          $"{deliveryDateTime:dd/MM/yyyy},{deliveryDateTime:HH:mm}," +
+                          $"{deliveryAddress},{DateTime.Now:dd/MM/yyyy HH:mm:ss}," +
+                          $"{orderTotal:F2},Pending,\"{itemsString}\"";
+
+        File.AppendAllText("orders.csv", Environment.NewLine + orderLine);
+
+        // Display confirmation
+        Console.WriteLine();
+        Console.WriteLine($"Order {newOrderId} created successfully! Status: Pending");
     }
 
-    }
+
+
+
+}
+
+    

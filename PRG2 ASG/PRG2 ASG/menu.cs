@@ -7,9 +7,9 @@ using System.Collections.Generic;
 //==========================================================
 public class Menu
 {
-    private string MenuId;
-    private string MenuName;
-    private List<FoodItem> FoodItems;
+    public string MenuId;
+    public string MenuName;
+    public List<FoodItem> FoodItems;
 
     public Menu(string id, string name)
     {
@@ -30,11 +30,21 @@ public class Menu
         return FoodItems.Remove(item);
     }
 
-    // Put in Step 1 even though not stated
+    // Put in Step 1 even though not stated 
     public void DisplayFoodItems()
     {
         foreach (var item in FoodItems)
             System.Console.WriteLine("  - " + item);
+    }
+
+    //For Step 5
+    public void DisplayFoodItemsNumbered()
+    {
+        for (int i = 0; i < FoodItems.Count; i++)
+        {
+            FoodItem item = FoodItems[i];
+            Console.WriteLine($"{i + 1}. {item.ItemName} - ${item.ItemPrice:F2}");
+        }
     }
 
     public override string ToString()

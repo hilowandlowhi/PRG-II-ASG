@@ -15,7 +15,7 @@ public class OrderedFoodItem
 {
     public int QtyOrdered { get; private set; }
     public double SubTotal { get; private set; }
-    public FoodItem Item { get; private set; }
+    public FoodItem FoodItem { get; private set; }
 
 
     public OrderedFoodItem(int qtyOrdered, double subTotal)
@@ -26,7 +26,7 @@ public class OrderedFoodItem
 
     public OrderedFoodItem(FoodItem item, int qty)
     {
-        Item = item;
+        FoodItem = item;
         QtyOrdered = qty;
     }
 

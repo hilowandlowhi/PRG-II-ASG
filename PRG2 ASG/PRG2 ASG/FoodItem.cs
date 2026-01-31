@@ -6,10 +6,10 @@
 //==========================================================
 public class FoodItem
 {
-    private string ItemName;
-    private string ItemDesc;
-    private double ItemPrice;
-    private string customise;
+    public string ItemName;
+    public string ItemDesc;
+    public double ItemPrice;
+    public string customise;
 
     public FoodItem(string name) { ItemName = name; }
     public FoodItem(string name, string desc, double price)

@@ -26,5 +26,5 @@ public class Customer
     {
         return $"Name: {CustomerName}, Email: {EmailAddress}";
     }
-
+    public void Dispose() { }
 }

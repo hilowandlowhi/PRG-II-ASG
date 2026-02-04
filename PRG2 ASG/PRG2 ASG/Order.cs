@@ -11,7 +11,7 @@ using System.Net.Mail;
 public class Order
 {
     public int OrderId { get; private set; }
-    public DateTime OrderDateTime { get; private set; }
+    public DateTime OrderDateTime { get; private set; } 
     public double OrderTotal { get; private set; }
     public string OrderStatus { get; private set; }
     public DateTime DeliveryDateTime { get; private set; }
@@ -49,7 +49,20 @@ public class Order
     }
 
     public bool RemoveOrderedFoodItem(OrderedFoodItem orderedfoodItem) { return true; }
-    public void DisplayOrderedFoodItems() { }
+
+    // For Step 6 needs to add
+    public void DisplayOrderedFoodItems()
+    {
+        foreach (var item in OrderedFoodItem)
+        {
+            Console.WriteLine($" - {item.FoodItem.ItemName} x {item.QtyOrdered}");
+        }
+    }
+
+    public void UpdateOrderStatus(string newStatus)
+    {
+        OrderStatus = newStatus;
+    }
 
 
     public override string ToString()

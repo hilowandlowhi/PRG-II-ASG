@@ -12,6 +12,7 @@ using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net.Mail;
 using System.Runtime.InteropServices.Marshalling;
+using static System.Collections.Specialized.BitVector32;
 
 class Program
 {
@@ -22,6 +23,8 @@ class Program
     static Dictionary<int, string> orderRestaurantId = new Dictionary<int, string>();
     static Dictionary<string, string> restaurantNameById = new Dictionary<string, string>();
     static Dictionary<string, Restaurant> allRestaurants = new Dictionary<string, Restaurant>();
+    static Queue<Order> orderQueue = new Queue<Order>();
+    static Stack<Order> refundStack = new Stack<Order>();
     static void Main()
     {
         // Step 1: Load restaurants and food items
@@ -47,6 +50,9 @@ class Program
 
         // Step 5: Create a New Order
         CreateNewOrder();
+
+        // Step 6: Process An Order
+        ProcessOrder();
     }
 
     // Load restaurants from CSV file
@@ -455,9 +461,130 @@ class Program
         Console.WriteLine($"Order {newOrderId} created successfully! Status: Pending");
     }
 
+    static void ProcessOrder()
+    {
+        Console.WriteLine();
+        Console.WriteLine("Process Order");
+        Console.WriteLine("=============");
 
+        // Get restaurant ID
+        Console.Write("Enter Restaurant ID: ");
+        string restaurantId = Console.ReadLine().Trim();
 
+        // Validatation
+        if (!allRestaurants.ContainsKey(restaurantId))
+        {
+            Console.WriteLine("Invalid Restaurant ID.");
+            return;
+        }
 
+        // Clear Queue
+
+        orderQueue.Clear();
+        foreach (Order order in allOrders)
+        {
+            if (orderRestaurantId.ContainsKey(order.OrderId) &&
+                orderRestaurantId[order.OrderId] == restaurantId)
+            {
+                orderQueue.Enqueue(order);
+            }
+        }
+
+        if (orderQueue.Count == 0)
+        {
+            Console.WriteLine($"No orders found for restaurant {restaurantId}.");
+            return;
+        }
+
+        while (orderQueue.Count > 0)
+        {
+            Order currentOrder = orderQueue.Dequeue();
+
+            Console.WriteLine();
+            Console.WriteLine($"Order {currentOrder.OrderId}:");
+
+            string customerEmail = orderCustomerEmail.ContainsKey(currentOrder.OrderId)
+                ? orderCustomerEmail[currentOrder.OrderId] : "";
+            string customerName = customersByEmail.ContainsKey(customerEmail)
+                ? customersByEmail[customerEmail].CustomerName : "Unknown";
+
+            Console.WriteLine($"Customer: {customerName}");
+
+            Console.WriteLine("Ordered Items:");
+            foreach(OrderedFoodItem item in currentOrder.OrderedFoodItem)
+            {
+                Console.WriteLine($"{currentOrder.OrderedFoodItem.IndexOf(item) + 1}. {item.FoodItem.ItemName} - {item.QtyOrdered}");
+            }
+            Console.WriteLine($"Delivery date/time: {currentOrder.DeliveryDateTime:dd/MM/yyyy HH:mm}");
+            Console.WriteLine($"Total Amount: ${currentOrder.OrderTotal:F2}");
+            Console.WriteLine($"Order Status: {currentOrder.OrderStatus}");
+
+            // Option
+            Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
+            string option = Console.ReadLine().ToUpper(); // in case of lower case
+
+            if (option == "C")
+            {
+                if (currentOrder.OrderStatus == "Pending")
+                {
+                    currentOrder.UpdateOrderStatus("Preparing");
+                    Console.WriteLine($"Order {currentOrder.OrderId} confirmed. Status: Preparing");
+                }
+                else
+                {
+                    Console.WriteLine($"Cannot confirm order. Current status is {currentOrder.OrderStatus}. Only Pending orders can be confirmed.");
+                }
+            }
+
+            else if (option == "R")
+            {
+                
+                if (currentOrder.OrderStatus == "Pending")
+                {
+                    currentOrder.UpdateOrderStatus("Rejected");
+                    refundStack.Push(currentOrder);
+                    Console.WriteLine($"Order {currentOrder.OrderId} rejected. Status: Rejected");
+                    Console.WriteLine($"Refund of ${currentOrder.OrderTotal:F2} will be processed for {customerName}.");
+                }
+                else
+                {
+                    Console.WriteLine($"Cannot reject order. Current status is {currentOrder.OrderStatus}. Only Pending orders can be rejected.");
+                }
+            }
+
+            else if (option == "S")
+            {
+                if(currentOrder.OrderStatus == "Cancelled")
+                {
+                    Console.WriteLine($"Order {currentOrder.OrderId} skipped.");
+                }
+                else
+                {
+                    Console.WriteLine($"Skipping order {currentOrder.OrderId} (Status: {currentOrder.OrderStatus}).");
+                }
+            }
+            else if (option == "D")
+            {
+                if (currentOrder.OrderStatus == "Preparing")
+                {
+                    currentOrder.UpdateOrderStatus("Delivered");
+                    Console.WriteLine($"Order {currentOrder.OrderId} changed to delivered. Status: {currentOrder.OrderStatus}");
+
+                }
+                else
+                {
+                    Console.WriteLine($"Cannot deliver order. Current status is {currentOrder.OrderStatus}. Only Preparing orders can be delivered.");
+                }
+            }
+
+            else
+            {
+                Console.WriteLine("Invalid Option, skipping order.");
+            }
+        }
+        
+
+    }
 }
 
     

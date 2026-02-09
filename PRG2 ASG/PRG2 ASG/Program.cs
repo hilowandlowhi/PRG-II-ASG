@@ -83,8 +83,10 @@ class Program
                     ModifyOrder();
                     break;
                 case "6":
-                    // Step 8: To do
+                    // Step 8: Delete An Existing Order
+                    DeleteOrder();
                     break;
+                    
                 case "0":
                     // Exit
                     Console.WriteLine("Exiting the system. Goodbye!");
@@ -717,6 +719,68 @@ class Program
 
                 Console.WriteLine();
             }
+        }
+    }
+    // Step 8 of PRG2 Assignment
+    static void DeleteOrder()
+    {
+        Console.WriteLine("\nDelete Order");
+        Console.WriteLine("============");
+        Console.Write("Enter Customer Email: ");
+        string customerEmail = Console.ReadLine();
+
+        if (!customersByEmail.ContainsKey(customerEmail))
+        {
+            Console.WriteLine("Customer cannot be found.");
+            return;
+        }
+
+        Customer customer = customersByEmail[customerEmail];
+        List<Order> pendorders = customer.Orders.FindAll(o => o.OrderStatus == "Pending");
+
+        if (pendorders.Count == 0)
+        {
+            Console.WriteLine("There are no pending orders found for this customer at all.");
+            return;
+        }
+
+        Console.WriteLine("Pending Orders:");
+        foreach (Order o in pendorders)
+        {
+            Console.WriteLine(o.OrderId);
+        }
+
+        Console.Write("Enter Order ID: ");
+        int orderId = Convert.ToInt32(Console.ReadLine());
+        Order orderdelete = pendorders.Find(o => o.OrderId == orderId);
+
+        if (orderdelete == null)
+        {
+            Console.WriteLine("Order not found or is not in pending.");
+            return;
+        }
+
+        Console.WriteLine($"Customer: {customer.CustomerName}");
+        Console.WriteLine("Ordered Items: ");
+        foreach (OrderedFoodItem item in orderdelete.OrderedFoodItem)
+        {
+            Console.WriteLine($"{orderdelete.OrderedFoodItem.IndexOf(item) + 1}. {item.FoodItem.ItemName} - {item.QtyOrdered}");
+        }
+        Console.WriteLine($"Delivery date/time: {orderdelete.DeliveryDateTime:dd/MM/yyyy HH:mm}");
+        Console.WriteLine($"Total Amount: ${orderdelete.OrderTotal:F2}");
+        Console.WriteLine($"Order Status: {orderdelete.OrderStatus}");
+        Console.Write("Confirm deletion? [Y/N]: ");
+        string choice = Console.ReadLine().ToUpper();
+
+        if (choice == "Y")
+        {
+            orderdelete.UpdateOrderStatus("Cancelled");
+            refundStack.Push(orderdelete);
+            Console.WriteLine($"Order {orderdelete.OrderId} cancelled. Refund of ${orderdelete.OrderTotal:F2} processed");
+        }
+        else
+        {
+            Console.WriteLine("Deletion cancelled");
         }
     }
 }

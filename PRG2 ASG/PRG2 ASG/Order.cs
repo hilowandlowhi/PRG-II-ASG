@@ -64,6 +64,16 @@ public class Order
         OrderStatus = newStatus;
     }
 
+    public void UpdateDeliveryAddress(string newAddress)
+    {
+        DeliveryAddress = newAddress;
+    }
+
+    public void UpdateDeliveryDateTime(DateTime newDateTime)
+    {
+        DeliveryDateTime = newDateTime;
+    }
+
 
     public override string ToString()
     {

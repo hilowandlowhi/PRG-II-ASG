@@ -55,6 +55,7 @@ class Program
             Console.WriteLine("4. Process an order");
             Console.WriteLine("5. Modify an existing order");
             Console.WriteLine("6. Delete an existing order");
+            Console.WriteLine("7. Bulk process unprocessed orders for current day");
             Console.WriteLine("0. Exit");
             Console.Write("Enter your choice: ");
             string Choice = Console.ReadLine();
@@ -86,7 +87,12 @@ class Program
                     // Step 8: Delete An Existing Order
                     DeleteOrder();
                     break;
-                    
+                case "7":
+                    // Advanced Feature A: Bulk processing of unprocessed orders for a current day
+                    // Matthew Tay
+                    BulkProcessOrders();
+                    break;
+
                 case "0":
                     // Exit
                     Console.WriteLine("Exiting the system. Goodbye!");
@@ -501,9 +507,10 @@ class Program
 
         // Display confirmation
         Console.WriteLine();
-        Console.WriteLine($"Order {newOrderId} created successfully! Status: Pending");
+        Console.WriteLine($"Order {newOrderId} created successfully! Status: Pending\n");
     }
 
+    // Step 6 
     static void ProcessOrder()
     {
         Console.WriteLine();
@@ -517,8 +524,8 @@ class Program
         // Validatation
         if (!allRestaurants.ContainsKey(restaurantId))
         {
-            Console.WriteLine("Invalid Restaurant ID.");
-            return;
+            Console.WriteLine("Invalid Restaurant ID. Please try again.\n"); 
+            return; // brings back to option overview cos if not cannot get out of option
         }
 
         // Clear Queue
@@ -539,7 +546,7 @@ class Program
             return;
         }
 
-        while (orderQueue.Count > 0)
+        while (orderQueue.Count > 0) // show the information for the customer's orders
         {
             Order currentOrder = orderQueue.Dequeue();
 
@@ -563,12 +570,12 @@ class Program
             Console.WriteLine($"Order Status: {currentOrder.OrderStatus}");
             Console.WriteLine();
 
-            // Option
+            // Option for user to choose about the order status
             Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
             string option = Console.ReadLine().ToUpper(); // in case of lower case
             Console.WriteLine();
 
-            if (option == "C")
+            if (option == "C") // changes status from pending to preparing 
             {
                 if (currentOrder.OrderStatus == "Pending")
                 {
@@ -581,7 +588,7 @@ class Program
                 }
             }
 
-            else if (option == "R")
+            else if (option == "R") // changes pending status to rejected status
             {
 
                 if (currentOrder.OrderStatus == "Pending")
@@ -597,7 +604,7 @@ class Program
                 }
             }
 
-            else if (option == "S")
+            else if (option == "S") // changes pending status to cancelled
             {
                 if (currentOrder.OrderStatus == "Cancelled")
                 {
@@ -608,7 +615,7 @@ class Program
                     Console.WriteLine($"Skipping order {currentOrder.OrderId} (Status: {currentOrder.OrderStatus}).");
                 }
             }
-            else if (option == "D")
+            else if (option == "D") // changes preparing status to delivered
             {
                 if (currentOrder.OrderStatus == "Preparing")
                 {
@@ -728,7 +735,8 @@ class Program
         Console.WriteLine("============");
         Console.Write("Enter Customer Email: ");
         string customerEmail = Console.ReadLine();
-
+        
+        // Validattion
         if (!customersByEmail.ContainsKey(customerEmail))
         {
             Console.WriteLine("Customer cannot be found.");
@@ -736,13 +744,14 @@ class Program
         }
 
         Customer customer = customersByEmail[customerEmail];
-        List<Order> pendorders = customer.Orders.FindAll(o => o.OrderStatus == "Pending");
+        List<Order> pendorders = customer.Orders.FindAll(o => o.OrderStatus == "Pending"); // Finding the orders that have status pending
 
-        if (pendorders.Count == 0)
+        if (pendorders.Count == 0) // for customers with no pending orders
         {
             Console.WriteLine("There are no pending orders found for this customer at all.");
             return;
         }
+
 
         Console.WriteLine("Pending Orders:");
         foreach (Order o in pendorders)
@@ -752,15 +761,16 @@ class Program
 
         Console.Write("Enter Order ID: ");
         int orderId = Convert.ToInt32(Console.ReadLine());
+
         Order orderdelete = pendorders.Find(o => o.OrderId == orderId);
 
-        if (orderdelete == null)
+        if (orderdelete == null) // Validate if order is in pending or not, and whether or not it even exists
         {
-            Console.WriteLine("Order not found or is not in pending.");
+            Console.WriteLine("Order not found/exists or is not in pending.");
             return;
         }
 
-        Console.WriteLine($"Customer: {customer.CustomerName}");
+        Console.WriteLine($"\nCustomer: {customer.CustomerName}");
         Console.WriteLine("Ordered Items: ");
         foreach (OrderedFoodItem item in orderdelete.OrderedFoodItem)
         {
@@ -769,19 +779,132 @@ class Program
         Console.WriteLine($"Delivery date/time: {orderdelete.DeliveryDateTime:dd/MM/yyyy HH:mm}");
         Console.WriteLine($"Total Amount: ${orderdelete.OrderTotal:F2}");
         Console.WriteLine($"Order Status: {orderdelete.OrderStatus}");
-        Console.Write("Confirm deletion? [Y/N]: ");
-        string choice = Console.ReadLine().ToUpper();
 
-        if (choice == "Y")
+        while (true)
+        // Validation for user, if user doesnt input correct value, reprompt till value accepted
         {
-            orderdelete.UpdateOrderStatus("Cancelled");
-            refundStack.Push(orderdelete);
-            Console.WriteLine($"Order {orderdelete.OrderId} cancelled. Refund of ${orderdelete.OrderTotal:F2} processed");
+            Console.Write("Confirm deletion? [Y/N]: ");
+            string choice = Console.ReadLine().ToUpper();
+
+            if (choice == "Y")
+            {
+                orderdelete.UpdateOrderStatus("Cancelled");
+                refundStack.Push(orderdelete);
+                Console.WriteLine($"\nOrder {orderdelete.OrderId} cancelled. Refund of ${orderdelete.OrderTotal:F2} processed");
+                break;
+            }
+            else if (choice == "N")
+            {
+                Console.WriteLine("\nDeletion cancelled");
+                break;
+            }
+            else
+            {
+                Console.WriteLine("\nInvalid input. Please try again.");
+            }
         }
-        else
-        {
-            Console.WriteLine("Deletion cancelled");
-        }
+        
     }
-}
+
+    // Advanced Feature (a): Bulk processing of unprocessed orders for a current day (Matthew Tay)
+
+    static void BulkProcessOrders()
+    {
+        Console.WriteLine("Bulk processing of unprocessed orders for the current day\n");
+
+        DateTime today = DateTime.Now.Date;
+
+        List<Order> pendOrders = new List<Order>();
+        
+
+        foreach (Order order in allOrders)
+        {
+            // Check if status is pending 
+            if (order.OrderStatus == "Pending")  
+            {
+                pendOrders.Add(order);
+            }
+        }
+        // To display the total number in the Order Queues with pending status
+        Console.WriteLine($"Total number of pending orders: {pendOrders.Count}");
+
+        if (pendOrders.Count == 0)
+        {
+            Console.WriteLine("No pending orders to process for today.\n ");
+            return;
+        }
+
+        // To add all pending orders to queue
+        orderQueue.Clear();
+        foreach (Order order in pendOrders)
+        {
+            orderQueue.Enqueue(order);
+        }
+        Console.WriteLine($"Total number in Order Queue: {orderQueue.Count}\n");
+
+        int ordersProcessed = 0;
+        int preparingCount = 0;
+        int rejectedCount = 0;
+
+        // To process each order that is in the queue
+        while (orderQueue.Count > 0)
+        {
+            Order currentOrder = orderQueue.Dequeue();
+
+            // To get the customer information
+            string customerEmail = orderCustomerEmail.ContainsKey(currentOrder.OrderId)
+            ? orderCustomerEmail[currentOrder.OrderId] : "";
+            string customerName = customersByEmail.ContainsKey(customerEmail)
+                ? customersByEmail[customerEmail].CustomerName : "Unknown";
+
+            // below to calculate the time diff in hours from delivery time with order time
+            double totalMinutes = (currentOrder.DeliveryDateTime - currentOrder.OrderDateTime).TotalMinutes; // Total Minutes calculates all of the components(Days,Hours...) into a minute count
+            double hourstilDelivery = totalMinutes / 60.0;
+            
+
+            if (hourstilDelivery < 1)
+            {
+                // Set to reject if delivery time less that one hour
+                currentOrder.UpdateOrderStatus("Rejected");
+                refundStack.Push(currentOrder);
+                rejectedCount++;
+
+                Console.WriteLine($"Order {currentOrder.OrderId} - Customer: {customerName}"); // shows which customer made what order that will be rejected
+                Console.WriteLine($"Delivery time: {currentOrder.DeliveryDateTime:dd/MM/yyyy HH:mm}"); // shows the delivery time
+                Console.WriteLine($"Order time: {currentOrder.OrderDateTime}");
+                Console.WriteLine($"Status: Rejected (Delivery time less than 1 hour)"); // shows proof of changing status to rejected for user
+                Console.WriteLine($"Refund of ${currentOrder.OrderTotal:F2} will be processed.\n"); // Shows the refund feedback
+
+            }
+
+            else
+            {
+                // If delivery time not less than one hour, set to preparing
+                currentOrder.UpdateOrderStatus("Preparing");
+                preparingCount++;
+                Console.WriteLine($"Order {currentOrder.OrderId} - Customer: {customerName}"); // shows which customer made what order that will be set to preparing
+                Console.WriteLine($"Delivery time: {currentOrder.DeliveryDateTime:dd/MM/yyyy HH:mm}"); // shows order's delivery time
+                Console.WriteLine($"Order time: {currentOrder.OrderDateTime}");
+                Console.WriteLine($"Status: Preparing\n"); // shows proof of stauts change for user to see
+            }
+            ordersProcessed++;
+
+        }
+        // Summary Statistics
+        Console.WriteLine("Summary of the Bulk Processing\n");
+        Console.WriteLine($"Number of orders processed: {ordersProcessed}");
+        Console.WriteLine($"Number of \"Preparing\" orders: {preparingCount}");
+        Console.WriteLine($"Number of \"Rejected\" orders: {rejectedCount}");
+
+        // Calculate the percentage of automatically processed orders against all orders
+        double percentageProcess = 0;
+        if (pendOrders.Count > 0)
+        {
+            percentageProcess = ((double)ordersProcessed / allOrders.Count) * 100;
+        }
+
+        Console.WriteLine($"Percentage of automatically processed orders: {percentageProcess:F2}% \n");
+    }
+}   
+
     

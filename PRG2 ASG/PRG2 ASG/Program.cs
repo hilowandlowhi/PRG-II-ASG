@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net.Mail;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.AccessControl;
 using Microsoft.VisualBasic.FileIO;
@@ -29,6 +30,9 @@ class Program
     static Queue<Order> orderQueue = new Queue<Order>();
     static Stack<Order> refundStack = new Stack<Order>();
     static Dictionary<string, SpecialOffer> allSpecialOffers = new Dictionary<string, SpecialOffer>();
+    // For advanced feature (c) (Matthew Tay)
+    static List<FavouriteOrder> allFavourites = new List<FavouriteOrder>();
+    static Dictionary<string, List<FavouriteOrder>> customerFavourites = new Dictionary<string, List<FavouriteOrder>>();
     static void Main()
     {
         Console.WriteLine("\nWelcome to the Gruberoo Food Delivery System");
@@ -65,6 +69,7 @@ class Program
             Console.WriteLine("6. Delete an existing order");
             Console.WriteLine("7. Bulk process unprocessed orders for current day");
             Console.WriteLine("8. Display total order amount");
+            Console.WriteLine("9. Manage Favourite Orders");
             Console.WriteLine("0. Exit");
             Console.Write("Enter your choice: ");
             string Choice = Console.ReadLine();
@@ -106,7 +111,11 @@ class Program
                     // Jovan Soo
                     DisplayTotalOrderAmount();
                     break;
-
+                case "9":
+                    // Advanced Feature (c): Shows Customer(s) favourite orders
+                    // Matthew Tay
+                    ManageFavouriteOrders();
+                    break;
                 case "0":
                     // Exit
                     Console.WriteLine("Exiting the system. Goodbye!");
@@ -118,6 +127,12 @@ class Program
         }
     }
 
+    //==========================================================
+    // Student Number : S10273266
+    // Partner Number : S10271067
+    // Student Name : Matthew Tay
+    // Partner Name : Jovan Soo
+    //==========================================================
     // Load restaurants from CSV file
     static Dictionary<string, Restaurant> LoadRestaurants(string file)
     {
@@ -147,7 +162,12 @@ class Program
 
         return restaurants;
     }
-
+    //==========================================================
+    // Student Number : S10273266
+    // Partner Number : S10271067
+    // Student Name : Matthew Tay
+    // Partner Name : Jovan Soo
+    //==========================================================
     // Load food items from CSV file
     static int LoadFoodItems(string file, Dictionary<string, Restaurant> restaurants)
     {
@@ -363,6 +383,12 @@ class Program
         }
     }
 
+    //==========================================================
+    // Student Number : S10273266
+    // Partner Number : S10271067
+    // Student Name : Matthew Tay
+    // Partner Name : Jovan Soo
+    //==========================================================
     // Display All Orders 
     static void DisplayAllOrders()
     {
@@ -401,66 +427,141 @@ class Program
         Console.Write("Enter Customer Email: ");
         string customerEmail = Console.ReadLine();
 
-        // Get restaurant ID
-        Console.Write("Enter Restaurant ID: ");
-        string restaurantId = Console.ReadLine().Trim();
-
-
-        // Get delivery date and time
-        Console.Write("Enter Delivery Date (dd/mm/yyyy): ");
-        string deliveryDateStr = Console.ReadLine();
-        Console.Write("Enter Delivery Time (hh:mm): ");
-        string deliveryTimeStr = Console.ReadLine();
-
-        // Get delivery address
-        Console.Write("Enter Delivery Address: ");
-        string deliveryAddress = Console.ReadLine();
-
-        Console.WriteLine();
-
-        // Validate restaurant ID (It is only behind because if this is done in a while loop above, restuarantId will not be saved and causes errors)
-        if (!allRestaurants.ContainsKey(restaurantId))
+        if (!customersByEmail.ContainsKey(customerEmail))
         {
-            Console.WriteLine("Invalid Restaurant ID.");
+            Console.WriteLine("Customer not found.");
             return;
         }
 
-        // Get the restaurant and display its menu
-        Restaurant selectedRestaurant = allRestaurants[restaurantId];
-        Console.WriteLine("Available Food Items:");
-        Menu menu = selectedRestaurant.GetMenu();
-        menu.DisplayFoodItemsNumbered();
-        List<FoodItem> items = menu.FoodItems;
-        Console.WriteLine();
-
-        // Allow user to select items
+        // For Advanced Feature (c) (Matthew Tay) Check if customer inputted has favourites
+        bool hasFavourites = customerFavourites.ContainsKey(customerEmail) && customerFavourites[customerEmail].Count > 0;
+        FavouriteOrder selectedFavourite = null;
+        string restaurantId = "";
+        string deliveryDateStr = "";
+        string deliveryTimeStr = "";
+        string deliveryAddress = "";
         List<OrderedFoodItem> orderedItems = new List<OrderedFoodItem>();
         double subtotal = 0;
 
-        while (true)
+        if (hasFavourites)
         {
-            Console.Write("Enter item number (0 to finish): ");
-            string input = Console.ReadLine();
-            int itemNumber = int.Parse(input);
+            Customer customer = customersByEmail[customerEmail];
+            Console.WriteLine($"Hello. {customer.CustomerName}!");
+            Console.WriteLine("You have saved favourite orders.");
+            
 
-            if (itemNumber == 0)
-                break;
-
-            if (itemNumber < 1 || itemNumber > items.Count)
+            while (true)
             {
-                Console.WriteLine("Invalid item number.");
-                continue;
+                Console.Write("Would you like to [1] Order from Favourites or [2] Create New Order? ");
+                string choice = Console.ReadLine().Trim();
+                if (choice == "1")
+                {
+                    selectedFavourite = SelectFavourite(customerEmail);
+
+                    if (selectedFavourite != null) // So if user chooses to order from favourite, already filled
+                    {
+                        
+                        Console.Write("Confirm Order? (Y/N): ");
+                        string result = Console.ReadLine();
+                        if (result.Trim().ToUpper() == "Y")
+                        {
+                            Console.WriteLine("Order Implemented!");
+                            break;
+                        }
+                        else if (result.Trim().ToUpper() == "N")
+                        {
+                            Console.WriteLine("Order cancelled, redirecting back...");
+                            
+                        }
+                }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else if (choice == "2")
+                {
+                    break;
+                }
+
+                else
+                {
+                    Console.WriteLine("Invalid Option. Please enter 1 or 2.\n");
+                }
+                
+                
+            }
+        }
+        if (selectedFavourite == null) // Matthew Tay Adv Feature
+        {
+            // Get restaurant ID
+            Console.Write("Enter Restaurant ID: ");
+            restaurantId = Console.ReadLine().Trim();
+            // Validate restaurant ID (It is only behind because if this is done in a while loop above, restuarantId will not be saved and causes errors)
+            if (!allRestaurants.ContainsKey(restaurantId))
+            {
+                Console.WriteLine("Invalid Restaurant ID.");
+                return;
+            }
+            // Get delivery date and time
+            Console.Write("Enter Delivery Date (dd/mm/yyyy): ");
+            deliveryDateStr = Console.ReadLine();
+            Console.Write("Enter Delivery Time (hh:mm): ");
+            deliveryTimeStr = Console.ReadLine();
+
+            // Get delivery address
+            Console.Write("Enter Delivery Address: ");
+            deliveryAddress = Console.ReadLine();
+
+            Console.WriteLine();
+
+            // Get the restaurant and display its menu
+            Restaurant selectedRestaurant = allRestaurants[restaurantId];
+            Console.WriteLine("Available Food Items:");
+            Menu menu = selectedRestaurant.GetMenu();
+            menu.DisplayFoodItemsNumbered();
+            List<FoodItem> items = menu.FoodItems;
+            Console.WriteLine();
+            // Allow user to select items
+            while (true)
+            {
+                Console.Write("Enter item number (0 to finish): ");
+                string input = Console.ReadLine();
+                int itemNumber = int.Parse(input);
+
+                if (itemNumber == 0)
+                    break;
+
+                if (itemNumber < 1 || itemNumber > items.Count)
+                {
+                    Console.WriteLine("Invalid item number.");
+                    continue;
+                }
+
+                Console.Write("Enter quantity: ");
+                int quantity = int.Parse(Console.ReadLine());
+
+                FoodItem selectedItem = items[itemNumber - 1];
+                OrderedFoodItem orderedItem = new OrderedFoodItem(selectedItem, quantity);
+                orderedItems.Add(orderedItem);
+
+                subtotal += selectedItem.ItemPrice * quantity;
             }
 
-            Console.Write("Enter quantity: ");
-            int quantity = int.Parse(Console.ReadLine());
-
-            FoodItem selectedItem = items[itemNumber - 1];
-            OrderedFoodItem orderedItem = new OrderedFoodItem(selectedItem, quantity);
-            orderedItems.Add(orderedItem);
-
-            subtotal += selectedItem.ItemPrice * quantity;
         }
+        else // This is if favourite was selected by user, to get the delivery details now
+        {
+            Console.Write("Enter Delivery Date (dd/MM/yyyy): ");
+            deliveryDateStr = Console.ReadLine();
+            Console.Write("Enter Delivery Time (HH:mm): ");
+            deliveryTimeStr = Console.ReadLine();
+            Console.Write("Enter Delivery Address: ");
+            deliveryAddress = Console.ReadLine();
+
+            Console.WriteLine();
+        }
+
+
 
         // Ask for special request
         Console.Write("Add special request? [Y/N]: ");
@@ -620,6 +721,12 @@ class Program
         Console.WriteLine($"Order {newOrderId} created successfully! Status: Pending\n");
     }
 
+    //==========================================================
+    // Student Number : S10273266
+    // Partner Number : S10271067
+    // Student Name : Matthew Tay
+    // Partner Name : Jovan Soo
+    //==========================================================
     // Process an order
     static void ProcessOrder()
     {
@@ -923,6 +1030,13 @@ class Program
             }
         }
     }
+
+    //==========================================================
+    // Student Number : S10273266
+    // Partner Number : S10271067
+    // Student Name : Matthew Tay
+    // Partner Name : Jovan Soo
+    //==========================================================
     // Step 8 of PRG2 Assignment
     static void DeleteOrder()
     {
@@ -1152,5 +1266,301 @@ class Program
         Console.WriteLine($"Final Amount Gruberoo earns: ${finalAmount:F2}");
         Console.WriteLine();
     }
+
+    //==========================================================
+    // Student Number : S10273266
+    // Partner Number : S10271067
+    // Student Name : Matthew Tay
+    // Partner Name : Jovan Soo
+    //==========================================================
+    // Advanced Feature (c): Showing customers favourite orders, showing the details, items and price.
+
+    static void ManageFavouriteOrders()
+    {
+        while (true)
+        {
+            Console.WriteLine("\nManage Favourite Orders");
+            Console.WriteLine("=======================");
+            Console.WriteLine("[1] View My Favourites");
+            Console.WriteLine("[2] Create New Favourite");
+            Console.WriteLine("[3] Delete Favourite");
+            Console.WriteLine("[0] Back to Main Menu");
+            Console.Write("Enter option: ");
+
+            string option = Console.ReadLine()?.Trim();
+            Console.WriteLine();
+
+            switch (option)
+            {
+                case "1":
+                    ViewCustomerFavourites();
+                    break;
+
+                case "2":
+                    CreateFavouriteOrder();
+                    break;
+
+                case "3":
+                    DeleteFavouriteOrder();
+                    break;
+                case "0":
+                    return;
+
+                default:
+                    Console.WriteLine("Invalid option. Please enter 0, 1, 2, or 3.");
+                    continue; // reprompt instead of exiting
+            }
+        }
+    }
+
+    // Viewing Customer Favourites
+    static void ViewCustomerFavourites()
+    {
+        Console.WriteLine("\nView My Favourites\n");
+        Console.Write("Enter your email: ");
+        string email = Console.ReadLine().Trim().ToLower();
+
+        if (!customersByEmail.ContainsKey(email))
+        {
+            Console.WriteLine("Customer not found.");
+            return;
+        }
+        
+        // Validate if customer has a favourite order
+        if (!customerFavourites.ContainsKey(email) || customerFavourites[email].Count == 0)
+        {
+            Console.WriteLine("You have no favorite orders saved.");
+            return;
+        }
+
+        Console.WriteLine($"\nShowing Favourite Orders for {customersByEmail[email].CustomerName}:");
+        int index = 1;
+
+        foreach(FavouriteOrder fav in customerFavourites[email])
+        {
+            Console.WriteLine($"\n[{index}] {fav.FavouriteName}");
+            Console.WriteLine($"Restaurant: {allRestaurants[fav.RestaurantId].RestaurantName}");
+            Console.WriteLine($"Items: {fav.Items.Count}");
+            Console.WriteLine($"Total: ${fav.GetTotalPrice():F2}");
+            Console.WriteLine($"Created: {fav.CreatedDate:dd/MM/yyyy}");
+            index++;
+        }
+    }
+
+    // Creating A Customer's Favourite Order
+
+    static void CreateFavouriteOrder()
+    {
+        Console.WriteLine("\nCreating A New Favorite Order\n");
+
+        Console.Write("Enter your email: ");
+        string email = Console.ReadLine().Trim().ToLower();
+
+        if (!customersByEmail.ContainsKey(email))
+        {
+            Console.WriteLine("Customer not found.");
+            return;
+        }
+
+        Customer customer = customersByEmail[email];
+
+        // Display all stalls
+        Console.WriteLine("\nAvailable Restaurants:");
+        foreach (var kvp in allRestaurants)
+        {
+            Console.WriteLine($"{kvp.Key} - {kvp.Value.RestaurantName}");
+        }
+
+        string restaurantId = "";
+        
+        while (true)
+        {
+
+            // Get restaurant for food item
+            Console.Write("Enter Restaurant ID: ");
+            restaurantId = Console.ReadLine().Trim();
+
+
+            if (!allRestaurants.ContainsKey(restaurantId))
+            {
+                Console.WriteLine("Invalid Restaurant ID.");
+                return;
+            }
+
+            else
+            {
+                break;
+            }
+        }
+        Restaurant restaurant = allRestaurants[restaurantId];
+        Console.WriteLine($"\nRestaurant: {restaurant.RestaurantName}");
+
+        // Display the Menu
+        Console.WriteLine("\nAvailable Items:");
+        restaurant.GetMenu().DisplayFoodItemsNumbered();
+        List<FoodItem> items = restaurant.GetMenu().FoodItems;
+
+        // Creating the favourite ID
+        string favouriteId = "FAV" + (allFavourites.Count + 1).ToString("D3");
+
+        Console.Write("\nEnter a name for this favourite order: ");
+        string favoriteName = Console.ReadLine().Trim();
+
+        if (string.IsNullOrEmpty(favoriteName))
+        {
+            favoriteName = "Favorite " + (allFavourites.Count + 1);
+        }
+
+        FavouriteOrder favourite = new FavouriteOrder(favouriteId, email, favoriteName, restaurantId);
+        
+        // To add items for favourite order
+        while (true)
+        {
+            Console.Write("\nEnter item number (or 0 to finish): ");
+            if (!int.TryParse(Console.ReadLine(), out int itemChoice) || itemChoice < 0 || itemChoice > items.Count)
+            {
+                Console.WriteLine("Invalid choice. Please try again.");
+                continue;
+            }
+
+            if (itemChoice == 0)
+            {
+                break;
+            }
+
+            FoodItem selectedItem = items[itemChoice - 1];
+
+            // Prompt user to enter quantity
+            Console.Write($"Enter quantity for {selectedItem.ItemName}: ");
+            if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
+            {
+                Console.WriteLine("Invalid quantity. Please try again.");
+                continue;
+            }
+            Console.Write("Any customisations? (press Enter to skip): ");
+            string customisations = Console.ReadLine().Trim();
+
+            FavouriteItem favouriteItem = new FavouriteItem(selectedItem, quantity, customisations);
+            favourite.Items.Add(favouriteItem);
+            Console.WriteLine($"Added {quantity} x {selectedItem.ItemName}");
+
+        }
+        // If user decided not to make new favourite
+        if (favourite.Items.Count == 0)
+        {
+            Console.WriteLine("No items added. Favoruite not created.");
+            return;
+        }
+
+        allFavourites.Add(favourite);
+
+        if (!customerFavourites.ContainsKey(email))
+        {
+            customerFavourites[email] = new List<FavouriteOrder>();
+        }
+        customerFavourites[email].Add(favourite);
+
+        Console.WriteLine("\n Favourite order has been created successfully!");
+        favourite.DisplayFavouriteDetails();
+    }
+
+    static void DeleteFavouriteOrder()
+    {
+        Console.WriteLine("\nDelete Favourite Order");
+
+        Console.Write("Enter your email: ");
+        string email = Console.ReadLine().Trim().ToLower();
+
+        if (!customersByEmail.ContainsKey(email))
+        {
+            Console.WriteLine("Customer not found.");
+            return;
+        }
+
+        if (!customerFavourites.ContainsKey(email) || customerFavourites[email].Count == 0)
+        {
+            Console.WriteLine("You have no favourite orders to delete.");
+            return;
+        }
+
+        // Display customers favourite(if any)
+        Console.WriteLine($"\nYour Favourite Orders:");
+        for (int i = 0; i < customerFavourites[email].Count; i++)
+        {
+            FavouriteOrder fav = customerFavourites[email][i];
+            Console.WriteLine($"{i + 1}. {fav.FavouriteName} ({fav.Items.Count} items, ${fav.GetTotalPrice():F2})");
+        }
+        Console.Write("\nEnter the number of the favourite to delete (or 0 to cancel): ");
+        if (!int.TryParse(Console.ReadLine(), out int choice) || choice < 0 || choice > customerFavourites[email].Count)
+        {
+            Console.WriteLine("Invalid choice.");
+            return;
+        }
+        if (choice == 0)
+        {
+            Console.WriteLine("Deletion cancelled.");
+            return;
+        }
+
+        FavouriteOrder toDelete = customerFavourites[email][choice - 1];
+        customerFavourites[email].RemoveAt(choice - 1);
+        allFavourites.Remove(toDelete);
+        Console.WriteLine($"Favourite '{toDelete.FavouriteName}' deleted successfully.");
+    }
+
+    // To Order from favourite saved (used in CreateNewOrder() )
+
+    static FavouriteOrder SelectFavourite(string email)
+    {
+        while (true)
+        {
+            Console.WriteLine("\nOrder from Favourite\n");
+            Console.WriteLine("Your Favourite Orders:");
+
+            for (int i = 0; i < customerFavourites[email].Count; i++)
+            {
+                FavouriteOrder fav = customerFavourites[email][i];
+                Console.WriteLine($"\n[{i + 1}] {fav.FavouriteName}");
+                Console.WriteLine($"Restaurant: {allRestaurants[fav.RestaurantId].RestaurantName}");
+                Console.WriteLine($"Items: {fav.Items.Count}");
+                Console.WriteLine($"Total: ${fav.GetTotalPrice():F2}");
+            }
+
+            Console.Write("\nSelect favourite number (or 0 to cancel): ");
+
+            if (!int.TryParse(Console.ReadLine(), out int choice))
+            {
+                Console.WriteLine("Invalid choice. Please enter a number.\n");
+                continue;
+            }
+
+            if (choice == 0)
+            {
+                Console.WriteLine("Order cancelled.\n");
+                return null;
+            }
+
+            if (choice < 1 || choice > customerFavourites[email].Count)
+            {
+                Console.WriteLine("Invalid choice. Please select from the list.\n");
+                continue;
+            }
+
+            FavouriteOrder selectedFavourite = customerFavourites[email][choice - 1];
+
+            // show selected favourite (so user can confirm it correct)
+            Console.WriteLine($"\nUsing favourite: {selectedFavourite.FavouriteName}");
+            Console.WriteLine($"Restaurant: {allRestaurants[selectedFavourite.RestaurantId].RestaurantName}");
+            Console.WriteLine("\nItems in your favourite:");
+            foreach (var fi in selectedFavourite.Items)
+            {
+                Console.WriteLine($"{fi.FoodItem.ItemName} x {fi.Quantity}");
+            }
+
+            return selectedFavourite;
+        }
+    }
+
+
 
 }

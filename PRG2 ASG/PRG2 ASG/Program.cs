@@ -1557,7 +1557,7 @@ class Program
         }
         customerFavourites[email].Add(favourite);
 
-        Console.WriteLine("\n Favourite order has been created successfully!");
+        Console.WriteLine("\nFavourite order has been created successfully!");
         favourite.DisplayFavouriteDetails();
     }
 
@@ -1608,7 +1608,7 @@ class Program
     // To Order from favourite saved (used in CreateNewOrder() )
 
     static FavouriteOrder SelectFavourite(string email)
-    {
+    {   
         while (true)
         {
             Console.WriteLine("\nOrder from Favourite\n");

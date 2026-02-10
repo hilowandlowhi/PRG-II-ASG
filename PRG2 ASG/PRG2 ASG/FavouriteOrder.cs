@@ -45,7 +45,7 @@ class FavouriteOrder
         int index = 1;
         foreach (FavouriteItem item in Items)
         {
-            Console.WriteLine($"{index}. {item.FoodItem.ItemName} x {item.Quantity} (${item.FoodItem.ItemPrice:F2} each");
+            Console.WriteLine($"{index}. {item.FoodItem.ItemName} x {item.Quantity} (${item.FoodItem.ItemPrice:F2} each)");
             if (!string.IsNullOrEmpty(item.Customisations))
             {
                 Console.WriteLine($"Customisations: {item.Customisations}");

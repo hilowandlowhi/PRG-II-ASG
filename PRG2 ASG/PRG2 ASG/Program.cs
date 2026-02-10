@@ -6,13 +6,14 @@
 // Student Name : Matthew Tay
 // Partner Name : Jovan Soo
 //==========================================================
-using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net.Mail;
 using System.Runtime.InteropServices.Marshalling;
+using System.Security.AccessControl;
+using Microsoft.VisualBasic.FileIO;
 using static System.Collections.Specialized.BitVector32;
 
 // To Do: Validations (and feedback)
@@ -27,6 +28,7 @@ class Program
     static Dictionary<string, Restaurant> allRestaurants = new Dictionary<string, Restaurant>();
     static Queue<Order> orderQueue = new Queue<Order>();
     static Stack<Order> refundStack = new Stack<Order>();
+    static Dictionary<string, SpecialOffer> allSpecialOffers = new Dictionary<string, SpecialOffer>();
     static void Main()
     {
         Console.WriteLine("\nWelcome to the Gruberoo Food Delivery System");
@@ -45,6 +47,11 @@ class Program
 
         Console.WriteLine($"{customers.Count} customers loaded!");
         Console.WriteLine($"{orderCount} orders loaded!");
+
+        // Additional Feature: Load Special Offers from CSV (Jovan Soo)
+        LoadSpecialOffers("specialoffers.csv");
+
+        Console.WriteLine($"{allSpecialOffers.Count} special offers loaded!");
         Console.WriteLine();
 
         while (true)
@@ -199,9 +206,6 @@ class Program
             string name = parts[0].Trim();
             string email = parts[1].Trim();
 
-
-
-
             customers[name] = new Customer(email, name);
 
             customersByEmail[email] = customers[name];
@@ -301,6 +305,49 @@ class Program
         return count;
     }
 
+    // Load special offers from CSV file
+    static void LoadSpecialOffers(string file)
+    {
+        if (!File.Exists(file)) return;
+
+        using StreamReader sr = new StreamReader(file);
+        sr.ReadLine(); // skip header
+
+        while (!sr.EndOfStream)
+        {
+            string line = sr.ReadLine();
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            string[] parts = line.Split(',');
+
+            string code = parts[1].Trim();
+            string desc = parts[2].Trim();
+            string discountStr = parts[3].Trim();
+
+            double discountAmt = 0;
+            string offerType = "";
+
+            // For Special Discounts Requiring to Reduce Cost by Other Means
+            if (discountStr == "-")
+            {
+                if (code == "DELI") offerType = "DELI";
+                else if (code == "BOGO") offerType = "BOGO";
+                // If Type is Neither DELI nor BOGO ignore
+                else offerType = "FLAT";
+            }
+            else
+            {
+                discountAmt = double.Parse(discountStr);
+                offerType = "FLAT";
+            }
+
+            // Only add first occurrence of each code (multiple restaurants share same code)
+            // Additionally this is called to show number of special offers loaded with Console.WriteLine($"{allSpecialOffers.Count} special offers loaded!"); above
+            if (!allSpecialOffers.ContainsKey(code))
+                allSpecialOffers[code] = new SpecialOffer(code, desc, discountAmt, offerType);
+        }
+    }
+
     // Display all restaurants and their menu items
     static void DisplayAllRestaurantsAndMenuItems(Dictionary<string, Restaurant> restaurants)
     {
@@ -358,6 +405,7 @@ class Program
         Console.Write("Enter Restaurant ID: ");
         string restaurantId = Console.ReadLine().Trim();
 
+
         // Get delivery date and time
         Console.Write("Enter Delivery Date (dd/mm/yyyy): ");
         string deliveryDateStr = Console.ReadLine();
@@ -370,7 +418,7 @@ class Program
 
         Console.WriteLine();
 
-        // Validate restaurant ID
+        // Validate restaurant ID (It is only behind because if this is done in a while loop above, restuarantId will not be saved and causes errors)
         if (!allRestaurants.ContainsKey(restaurantId))
         {
             Console.WriteLine("Invalid Restaurant ID.");
@@ -425,13 +473,66 @@ class Program
             specialRequest = Console.ReadLine();
         }
 
-        // Calculate order total (subtotal + delivery fee)
+        // Ask if customer has a special offer code
+        Console.Write("Enter special offer code (or press Enter to skip): ");
+        string offerCode = Console.ReadLine().Trim().ToUpper();
+
+        double discountAmount = 0;
         double deliveryFee = 5.00;
+        SpecialOffer appliedOffer = null;
+
+        if (offerCode != "")
+        {
+            if (allSpecialOffers.ContainsKey(offerCode))
+            {
+                appliedOffer = allSpecialOffers[offerCode];
+
+                if (appliedOffer.OfferType == "DELI")
+                {
+                    if (subtotal >= 30)
+                    {
+                        deliveryFee = 0;   // Remove Delivery Fee
+                        Console.WriteLine($"Offer applied: {appliedOffer.OfferDesc}");
+                        Console.WriteLine("Free delivery applied!");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Offer not applicable: subtotal must be $30 or more (yours: ${subtotal:F2}).");
+                        appliedOffer = null;
+                    }
+                }
+                else
+                {
+                    double newSubtotal = appliedOffer.ApplyDiscount(subtotal, deliveryFee);
+                    discountAmount = subtotal - newSubtotal;
+                    subtotal = newSubtotal;
+
+                    Console.WriteLine($"Offer applied: {appliedOffer.OfferDesc}");
+                    Console.WriteLine($"Discount: -${discountAmount:F2}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid offer code. No discount applied.");
+            }
+        }
+
+        // Calculate order total
         double orderTotal = subtotal + deliveryFee;
 
         // Display order summary
         Console.WriteLine();
-        Console.WriteLine($"Order Total: ${subtotal:F2} + ${deliveryFee:F2} (delivery) = ${orderTotal:F2}");
+        if (appliedOffer != null)
+        {
+            if (appliedOffer.OfferType == "DELI")
+                Console.WriteLine($"Subtotal: ${subtotal:F2} | Delivery: ${deliveryFee:F2}(Free) | Total: ${orderTotal:F2}");
+            else
+                Console.WriteLine($"Subtotal: ${subtotal:F2} (saved ${discountAmount:F2}) | Delivery: ${deliveryFee:F2} | Total: ${orderTotal:F2}");
+        }
+        else
+        {
+            Console.WriteLine($"Subtotal: ${subtotal:F2} | Delivery: ${deliveryFee:F2} | Total: ${orderTotal:F2}");
+        }
 
         // Ask for payment method
         Console.Write("Proceed to payment? [Y/N]: ");
@@ -713,13 +814,82 @@ class Program
                     Console.Write("Modify: [1] Items [2] Address [3] Delivery Time: ");
                     string choice = Console.ReadLine();
 
-                    if (choice == "1")
+                if (choice == "1")
                     {
-                        // Update items - To be implemented
-                        Console.WriteLine("Modifying Items is not implemented in this version.");
-                        continue;
+                        // Show current items
+                        Console.WriteLine("Current Items:");
+                        foreach (OrderedFoodItem item in order.OrderedFoodItem)
+                        {
+                            int number = order.OrderedFoodItem.IndexOf(item) + 1;
+                            Console.WriteLine($"{number}. {item.FoodItem.ItemName} x{item.QtyOrdered}");
+                        }
+
+                        Console.WriteLine();
+                        Console.WriteLine("What would you like to do?");
+                        Console.WriteLine("[A] Add item  [R] Remove item  [Q] Change quantity");
+                        string itemChoice = Console.ReadLine().ToUpper();
+
+                        if (itemChoice == "A")
+                        {
+                            // Get the restaurant's menu for this order
+                            string restId = orderRestaurantId[order.OrderId];
+                            Menu menu = allRestaurants[restId].GetMenu();
+                            menu.DisplayFoodItemsNumbered();
+                            List<FoodItem> items = menu.FoodItems;
+
+                            Console.Write("Enter item number to add: ");
+                            int itemNum = int.Parse(Console.ReadLine());
+
+                            Console.Write("Enter quantity: ");
+                            int qty = int.Parse(Console.ReadLine());
+
+                            FoodItem selected = items[itemNum - 1];
+                            OrderedFoodItem newItem = new OrderedFoodItem(selected, qty);
+                            order.AddOrderedFoodItem(newItem);
+
+                            Console.WriteLine($"Added {selected.ItemName} x{qty} to order.");
+                        }
+                        else if (itemChoice == "R")
+                        {
+                            Console.Write("Enter item number to remove: ");
+                            int removeIdx = int.Parse(Console.ReadLine()) - 1;
+
+                            if (removeIdx >= 0 && removeIdx < order.OrderedFoodItem.Count)
+                            {
+                                OrderedFoodItem toRemove = order.OrderedFoodItem[removeIdx];
+                                order.OrderedFoodItem.Remove(toRemove);
+                                Console.WriteLine($"Removed {toRemove.FoodItem.ItemName} from order.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Invalid item number.");
+                            }
+                        }
+                        else if (itemChoice == "Q")
+                        {
+                            Console.Write("Enter item number to update: ");
+                            int updateIdx = int.Parse(Console.ReadLine()) - 1;
+
+                            if (updateIdx >= 0 && updateIdx < order.OrderedFoodItem.Count)
+                            {
+                                Console.Write("Enter new quantity: ");
+                                int newQty = int.Parse(Console.ReadLine());
+
+                                OrderedFoodItem old = order.OrderedFoodItem[updateIdx];
+                                OrderedFoodItem updated = new OrderedFoodItem(old.FoodItem, newQty);
+                                order.OrderedFoodItem[updateIdx] = updated;
+
+                                Console.WriteLine($"Updated {old.FoodItem.ItemName} to x{newQty}.");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid choice.");
+                            continue;
+                        }
+                        break;
                     }
-                    
+
                     else if (choice == "2")
                     {
                         // Update delivery address
@@ -962,16 +1132,18 @@ class Program
                     double refundAmount = order.OrderTotal - deliveryFee;
                     grandTotalRefunds += refundAmount;
                 }
-            }
-            Console.WriteLine($"Restaurant: {allRestaurants[restaurantId].RestaurantName}");
-            Console.WriteLine($"  Total Order Amount: ${restaurantTotalOrderAmount:F2}");
-            Console.WriteLine($"  Total Refunds: ${restaurantTotalRefunds:F2}");
-            Console.WriteLine("");
 
-            grandTotalOrderAmount += restaurantTotalOrderAmount;
-            grandTotalRefunds += restaurantTotalRefunds;
+                Console.WriteLine($"Restaurant: {allRestaurants[restaurantId].RestaurantName}");
+                Console.WriteLine($"  Total Order Amount: ${restaurantTotalOrderAmount:F2}");
+                Console.WriteLine($"  Total Refunds: ${restaurantTotalRefunds:F2}");
+                Console.WriteLine("");
+
+                grandTotalOrderAmount += restaurantTotalOrderAmount;
+                grandTotalRefunds += restaurantTotalRefunds;
+            }
         }
         double finalAmount = grandTotalOrderAmount - grandTotalRefunds;
+
         // Overall Summary
         Console.WriteLine("Overall Summary");
         Console.WriteLine("================");
@@ -980,4 +1152,5 @@ class Program
         Console.WriteLine($"Final Amount Gruberoo earns: ${finalAmount:F2}");
         Console.WriteLine();
     }
+
 }

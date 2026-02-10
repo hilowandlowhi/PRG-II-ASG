@@ -9,15 +9,16 @@ public class FoodItem
     public string ItemName;
     public string ItemDesc;
     public double ItemPrice;
-    public string customise;
+    public string Customise;
 
     public FoodItem(string name) { ItemName = name; }
+    
     public FoodItem(string name, string desc, double price)
     {
         ItemName = name;
         ItemDesc = desc;
         ItemPrice = price;
-        customise = "";
+        Customise = "";
     }
 
     // Getters (needed by Menu when displaying later)
@@ -25,6 +26,11 @@ public class FoodItem
     public string GetItemDesc() => ItemDesc;
     public double GetItemPrice() => ItemPrice;
 
+    //For Special Requests
+    public void SetCustomise(string customise)
+    {
+        Customise = customise;
+    }
     public override string ToString()
     {
         return $"{ItemName}: {ItemDesc} - ${ItemPrice:0.00}";

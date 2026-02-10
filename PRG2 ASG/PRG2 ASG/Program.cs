@@ -465,7 +465,20 @@ class Program
                         string result = Console.ReadLine();
                         if (result.Trim().ToUpper() == "Y")
                         {
-                            Console.WriteLine("Order Implemented!");
+                            restaurantId = selectedFavourite.RestaurantId;
+
+                            orderedItems.Clear();
+                            subtotal = 0;
+
+                            foreach (FavouriteItem favItem in selectedFavourite.Items)
+                            {
+                                // Convert favourite item into an OrderedFoodItem
+                                OrderedFoodItem ordered = new OrderedFoodItem(favItem.FoodItem, favItem.Quantity);
+                                orderedItems.Add(ordered);
+
+                                subtotal += favItem.FoodItem.ItemPrice * favItem.Quantity;
+                            }
+                            Console.WriteLine("Favourite Order Implemented!");
                             break;
                         }
                         else if (result.Trim().ToUpper() == "N")
@@ -492,7 +505,7 @@ class Program
                 
             }
         }
-        if (selectedFavourite == null) // Matthew Tay Adv Feature
+        if (selectedFavourite == null) 
         {
             // Get restaurant ID
             Console.Write("Enter Restaurant ID: ");
@@ -810,7 +823,8 @@ class Program
         orderQueue.Clear();
         foreach (Order order in allOrders)
         {
-            if (orderRestaurantId.ContainsKey(order.OrderId) && orderRestaurantId[order.OrderId] == restaurantId && order.OrderStatus != "Delivered")
+            // Only Orders that are in pending, preparing and cancelled can be shown (no "Delivered" or "Rejected")
+            if (orderRestaurantId.ContainsKey(order.OrderId) && orderRestaurantId[order.OrderId] == restaurantId && order.OrderStatus != "Delivered" && order.OrderStatus != "Rejected")
             {
                 orderQueue.Enqueue(order);
             }
@@ -1128,16 +1142,40 @@ class Program
             Console.WriteLine(o.OrderId);
         }
 
-        Console.Write("Enter Order ID: ");
-        int orderId = Convert.ToInt32(Console.ReadLine());
+        Order orderdelete = null;
 
-        Order orderdelete = pendorders.Find(o => o.OrderId == orderId);
-
-        if (orderdelete == null) // Validate if order is in pending or not, and whether or not it even exists
+        while (true)
         {
-            Console.WriteLine("Order not found/exists or is not in pending.");
-            return;
+            Console.Write("Enter Order ID (or 0 to cancel): ");
+            string input = Console.ReadLine().Trim();
+
+            // Validate integer
+            if (!int.TryParse(input, out int orderId))
+            {
+                Console.WriteLine("Invalid input. Please enter a number.\n");
+                continue;
+            }
+
+            // Allow cancel
+            if (orderId == 0)
+            {
+                Console.WriteLine("Deletion cancelled.\n");
+                return;
+            }
+
+            // Validate order exists in pending list
+            orderdelete = pendorders.Find(o => o.OrderId == orderId);
+            if (orderdelete == null)
+            {
+                Console.WriteLine("Order not found in pending orders. Please try again.\n");
+                continue;
+            }
+
+            // Valid order found
+            break;
         }
+
+
 
         Console.WriteLine($"\nCustomer: {customer.CustomerName}");
         Console.WriteLine("Ordered Items: ");
@@ -1195,7 +1233,7 @@ class Program
             }
         }
         // To display the total number in the Order Queues with pending status
-        Console.WriteLine($"Total number of pending orders: {pendOrders.Count}");
+        Console.WriteLine($"Total number of pending orders: {pendOrders.Count}\n");
 
         if (pendOrders.Count == 0)
         {
@@ -1209,7 +1247,6 @@ class Program
         {
             orderQueue.Enqueue(order);
         }
-        Console.WriteLine($"Total number in Order Queue: {orderQueue.Count}\n");
 
         int ordersProcessed = 0;
         int preparingCount = 0;
@@ -1241,7 +1278,7 @@ class Program
                 Console.WriteLine($"Order {currentOrder.OrderId} - Customer: {customerName}"); // shows which customer made what order that will be rejected
                 Console.WriteLine($"Delivery time: {currentOrder.DeliveryDateTime:dd/MM/yyyy HH:mm}"); // shows the delivery time
                 Console.WriteLine($"Order time: {currentOrder.OrderDateTime}");
-                Console.WriteLine($"Status: Rejected (Delivery time less than 1 hour)"); // shows proof of changing status to rejected for user
+                Console.WriteLine($"Status changed to: Rejected (Delivery time less than 1 hour)"); // shows proof of changing status to rejected for user
                 Console.WriteLine($"Refund of ${currentOrder.OrderTotal:F2} will be processed.\n"); // Shows the refund feedback
 
             }
@@ -1254,7 +1291,7 @@ class Program
                 Console.WriteLine($"Order {currentOrder.OrderId} - Customer: {customerName}"); // shows which customer made what order that will be set to preparing
                 Console.WriteLine($"Delivery time: {currentOrder.DeliveryDateTime:dd/MM/yyyy HH:mm}"); // shows order's delivery time
                 Console.WriteLine($"Order time: {currentOrder.OrderDateTime}");
-                Console.WriteLine($"Status: Preparing\n"); // shows proof of stauts change for user to see
+                Console.WriteLine($"Status changed to: Preparing\n"); // shows proof of stauts change for user to see
             }
             ordersProcessed++;
 

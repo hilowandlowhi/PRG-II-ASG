@@ -6,6 +6,7 @@
 // Student Name : Matthew Tay
 // Partner Name : Jovan Soo
 //==========================================================
+using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
@@ -28,7 +29,7 @@ class Program
     static Stack<Order> refundStack = new Stack<Order>();
     static void Main()
     {
-        Console.WriteLine("Welcome to the Gruberoo Food Delivery System");
+        Console.WriteLine("\nWelcome to the Gruberoo Food Delivery System");
 
         // Step 1: Load restaurants and food items
         Dictionary<string, Restaurant> restaurants = LoadRestaurants("restaurants.csv");
@@ -533,8 +534,7 @@ class Program
         orderQueue.Clear();
         foreach (Order order in allOrders)
         {
-            if (orderRestaurantId.ContainsKey(order.OrderId) &&
-                orderRestaurantId[order.OrderId] == restaurantId)
+            if (orderRestaurantId.ContainsKey(order.OrderId) && orderRestaurantId[order.OrderId] == restaurantId && order.OrderStatus != "Delivered")
             {
                 orderQueue.Enqueue(order);
             }
@@ -550,8 +550,8 @@ class Program
         {
             Order currentOrder = orderQueue.Dequeue();
 
-            Console.WriteLine();
-            Console.WriteLine($"Order {currentOrder.OrderId}:");
+            
+            Console.WriteLine($"\nOrder {currentOrder.OrderId}:");
 
             string customerEmail = orderCustomerEmail.ContainsKey(currentOrder.OrderId)
                 ? orderCustomerEmail[currentOrder.OrderId] : "";
@@ -570,68 +570,79 @@ class Program
             Console.WriteLine($"Order Status: {currentOrder.OrderStatus}");
             Console.WriteLine();
 
-            // Option for user to choose about the order status
-            Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
-            string option = Console.ReadLine().ToUpper(); // in case of lower case
-            Console.WriteLine();
+            
 
-            if (option == "C") // changes status from pending to preparing 
+            bool validInp = false;
+
+            while (!validInp)
             {
-                if (currentOrder.OrderStatus == "Pending")
+                // Option for user to choose about the order status
+                Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
+                string choice = Console.ReadLine().ToUpper(); // in case of lower case
+                Console.WriteLine();
+
+                if (choice == "C")
                 {
-                    currentOrder.UpdateOrderStatus("Preparing");
-                    Console.WriteLine($"Order {currentOrder.OrderId} confirmed. Status: Preparing");
+                    if (currentOrder.OrderStatus == "Pending")
+                    {
+                        currentOrder.UpdateOrderStatus("Preparing");
+                        Console.WriteLine($"Order {currentOrder.OrderId} confirmed. Status: Preparing");
+                        validInp = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Cannot confirm order. Current status is {currentOrder.OrderStatus}. Only Pending orders can be confirmed.\n");
+                        
+                    }
+                }
+                else if (choice == "R")
+                {
+                    if (currentOrder.OrderStatus == "Pending")
+                    {
+                        currentOrder.UpdateOrderStatus("Rejected");
+                        refundStack.Push(currentOrder);
+                        Console.WriteLine($"Order {currentOrder.OrderId} rejected. Status: Rejected");
+                        Console.WriteLine($"Refund of ${currentOrder.OrderTotal:F2} will be processed for {customerName}.");
+                        validInp = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Cannot reject order. Current status is {currentOrder.OrderStatus}. Only Pending orders can be rejected.\n");
+                        
+                    }
+                }
+                else if (choice == "S")
+                {
+                    if (currentOrder.OrderStatus == "Cancelled")
+                    {
+                        Console.WriteLine($"Order {currentOrder.OrderId} skipped.");
+                        validInp = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Cannot skip order. Current status is {currentOrder.OrderStatus}. Only Cancelled orders can be skipped.\n");
+                        
+                    }
+                }
+                else if (choice == "D")
+                {
+                    if (currentOrder.OrderStatus == "Preparing")
+                    {
+                        currentOrder.UpdateOrderStatus("Delivered");
+                        Console.WriteLine($"Order {currentOrder.OrderId} changed to delivered. Status: {currentOrder.OrderStatus}");
+                        validInp = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Cannot deliver order. Current status is {currentOrder.OrderStatus}. Only Preparing orders can be delivered.\n");
+                        
+                    }
                 }
                 else
                 {
-                    Console.WriteLine($"Cannot confirm order. Current status is {currentOrder.OrderStatus}. Only Pending orders can be confirmed.");
+                    Console.WriteLine("Invalid option. Please try again.");
+                    
                 }
-            }
-
-            else if (option == "R") // changes pending status to rejected status
-            {
-
-                if (currentOrder.OrderStatus == "Pending")
-                {
-                    currentOrder.UpdateOrderStatus("Rejected");
-                    refundStack.Push(currentOrder);
-                    Console.WriteLine($"Order {currentOrder.OrderId} rejected. Status: Rejected");
-                    Console.WriteLine($"Refund of ${currentOrder.OrderTotal:F2} will be processed for {customerName}.");
-                }
-                else
-                {
-                    Console.WriteLine($"Cannot reject order. Current status is {currentOrder.OrderStatus}. Only Pending orders can be rejected.");
-                }
-            }
-
-            else if (option == "S") // changes pending status to cancelled
-            {
-                if (currentOrder.OrderStatus == "Cancelled")
-                {
-                    Console.WriteLine($"Order {currentOrder.OrderId} skipped.");
-                }
-                else
-                {
-                    Console.WriteLine($"Skipping order {currentOrder.OrderId} (Status: {currentOrder.OrderStatus}).");
-                }
-            }
-            else if (option == "D") // changes preparing status to delivered
-            {
-                if (currentOrder.OrderStatus == "Preparing")
-                {
-                    currentOrder.UpdateOrderStatus("Delivered");
-                    Console.WriteLine($"Order {currentOrder.OrderId} changed to delivered. Status: {currentOrder.OrderStatus}");
-
-                }
-                else
-                {
-                    Console.WriteLine($"Cannot deliver order. Current status is {currentOrder.OrderStatus}. Only Preparing orders can be delivered.");
-                }
-            }
-
-            else
-            {
-                Console.WriteLine("Invalid Option, skipping order.");
             }
         }
     }

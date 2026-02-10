@@ -57,6 +57,7 @@ class Program
             Console.WriteLine("5. Modify an existing order");
             Console.WriteLine("6. Delete an existing order");
             Console.WriteLine("7. Bulk process unprocessed orders for current day");
+            Console.WriteLine("8. Display total order amount");
             Console.WriteLine("0. Exit");
             Console.Write("Enter your choice: ");
             string Choice = Console.ReadLine();
@@ -92,6 +93,11 @@ class Program
                     // Advanced Feature A: Bulk processing of unprocessed orders for a current day
                     // Matthew Tay
                     BulkProcessOrders();
+                    break;
+                case "8":
+                    // Advanced Feature B: Display total order amount
+                    // Jovan Soo
+                    DisplayTotalOrderAmount();
                     break;
 
                 case "0":
@@ -336,6 +342,8 @@ class Program
         }
 
     }
+
+    // Create a new order
     static void CreateNewOrder()
     {
         Console.WriteLine();
@@ -511,7 +519,7 @@ class Program
         Console.WriteLine($"Order {newOrderId} created successfully! Status: Pending\n");
     }
 
-    // Step 6 
+    // Process an order
     static void ProcessOrder()
     {
         Console.WriteLine();
@@ -525,7 +533,7 @@ class Program
         // Validatation
         if (!allRestaurants.ContainsKey(restaurantId))
         {
-            Console.WriteLine("Invalid Restaurant ID. Please try again.\n"); 
+            Console.WriteLine("Invalid Restaurant ID. Please try again.\n");
             return; // brings back to option overview cos if not cannot get out of option
         }
 
@@ -550,7 +558,7 @@ class Program
         {
             Order currentOrder = orderQueue.Dequeue();
 
-            
+
             Console.WriteLine($"\nOrder {currentOrder.OrderId}:");
 
             string customerEmail = orderCustomerEmail.ContainsKey(currentOrder.OrderId)
@@ -570,7 +578,7 @@ class Program
             Console.WriteLine($"Order Status: {currentOrder.OrderStatus}");
             Console.WriteLine();
 
-            
+
 
             bool validInp = false;
 
@@ -592,7 +600,7 @@ class Program
                     else
                     {
                         Console.WriteLine($"Cannot confirm order. Current status is {currentOrder.OrderStatus}. Only Pending orders can be confirmed.\n");
-                        
+
                     }
                 }
                 else if (choice == "R")
@@ -608,7 +616,7 @@ class Program
                     else
                     {
                         Console.WriteLine($"Cannot reject order. Current status is {currentOrder.OrderStatus}. Only Pending orders can be rejected.\n");
-                        
+
                     }
                 }
                 else if (choice == "S")
@@ -621,7 +629,7 @@ class Program
                     else
                     {
                         Console.WriteLine($"Cannot skip order. Current status is {currentOrder.OrderStatus}. Only Cancelled orders can be skipped.\n");
-                        
+
                     }
                 }
                 else if (choice == "D")
@@ -635,17 +643,18 @@ class Program
                     else
                     {
                         Console.WriteLine($"Cannot deliver order. Current status is {currentOrder.OrderStatus}. Only Preparing orders can be delivered.\n");
-                        
+
                     }
                 }
                 else
                 {
                     Console.WriteLine("Invalid option. Please try again.");
-                    
+
                 }
             }
         }
     }
+    // Modify an existing order
     static void ModifyOrder()
     {
 
@@ -686,6 +695,7 @@ class Program
             else
             {
                 Order order = orderToModify;
+                // Display current order details
                 Console.WriteLine("Order Items: ");
                 foreach (OrderedFoodItem item in order.OrderedFoodItem)
                 {
@@ -705,11 +715,14 @@ class Program
 
                     if (choice == "1")
                     {
+                        // Update items - To be implemented
                         Console.WriteLine("Modifying Items is not implemented in this version.");
                         continue;
                     }
+                    
                     else if (choice == "2")
                     {
+                        // Update delivery address
                         Console.Write("Enter new delivery address: ");
                         string newAddress = Console.ReadLine();
                         order.UpdateDeliveryAddress(newAddress);
@@ -718,6 +731,7 @@ class Program
                     }
                     else if (choice == "3")
                     {
+                        // Update delivery time
                         Console.Write("Enter new delivery time (hh:mm): ");
                         string newTime = Console.ReadLine();
                         DateTime newDateTime = DateTime.Parse($"{order.DeliveryDateTime.ToString("dd/MM/yyyy")} {newTime}");
@@ -746,7 +760,7 @@ class Program
         Console.WriteLine("============");
         Console.Write("Enter Customer Email: ");
         string customerEmail = Console.ReadLine();
-        
+
         // Validattion
         if (!customersByEmail.ContainsKey(customerEmail))
         {
@@ -814,7 +828,7 @@ class Program
                 Console.WriteLine("\nInvalid input. Please try again.");
             }
         }
-        
+
     }
 
     // Advanced Feature (a): Bulk processing of unprocessed orders for a current day (Matthew Tay)
@@ -826,12 +840,12 @@ class Program
         DateTime today = DateTime.Now.Date;
 
         List<Order> pendOrders = new List<Order>();
-        
+
 
         foreach (Order order in allOrders)
         {
             // Check if status is pending 
-            if (order.OrderStatus == "Pending")  
+            if (order.OrderStatus == "Pending")
             {
                 pendOrders.Add(order);
             }
@@ -871,7 +885,7 @@ class Program
             // below to calculate the time diff in hours from delivery time with order time
             double totalMinutes = (currentOrder.DeliveryDateTime - currentOrder.OrderDateTime).TotalMinutes; // Total Minutes calculates all of the components(Days,Hours...) into a minute count
             double hourstilDelivery = totalMinutes / 60.0;
-            
+
 
             if (hourstilDelivery < 1)
             {
@@ -916,6 +930,54 @@ class Program
 
         Console.WriteLine($"Percentage of automatically processed orders: {percentageProcess:F2}% \n");
     }
-}   
 
-    
+    static void DisplayTotalOrderAmount()
+    {
+        Console.WriteLine("Display Total Order Amount");
+        Console.WriteLine("=========================");
+
+        double grandTotalOrderAmount = 0;
+        double grandTotalRefunds = 0;
+        // Iterate through each order to calculate totals
+        foreach (var order in allOrders)
+        {
+            double restaurantTotalOrderAmount = 0;
+            double restaurantTotalRefunds = 0;
+
+            // Get restaurant ID for the order
+            string restaurantId = orderRestaurantId.ContainsKey(order.OrderId) ? orderRestaurantId[order.OrderId] : "";
+            if (allRestaurants.ContainsKey(restaurantId))
+            {
+                Restaurant restaurant = allRestaurants[restaurantId];
+                double deliveryFee = 5.00;
+                // Successful orders
+                if (order.OrderStatus == "Delivered")
+                {
+                    double orderAmount = order.OrderTotal - deliveryFee;
+                    restaurantTotalOrderAmount += orderAmount;
+                }
+                // Refunded orders
+                if (order.OrderStatus == "Rejected" || order.OrderStatus == "Cancelled")
+                {
+                    double refundAmount = order.OrderTotal - deliveryFee;
+                    grandTotalRefunds += refundAmount;
+                }
+            }
+            Console.WriteLine($"Restaurant: {allRestaurants[restaurantId].RestaurantName}");
+            Console.WriteLine($"  Total Order Amount: ${restaurantTotalOrderAmount:F2}");
+            Console.WriteLine($"  Total Refunds: ${restaurantTotalRefunds:F2}");
+            Console.WriteLine("");
+
+            grandTotalOrderAmount += restaurantTotalOrderAmount;
+            grandTotalRefunds += restaurantTotalRefunds;
+        }
+        double finalAmount = grandTotalOrderAmount - grandTotalRefunds;
+        // Overall Summary
+        Console.WriteLine("Overall Summary");
+        Console.WriteLine("================");
+        Console.WriteLine($"Total Order Amount: ${grandTotalOrderAmount:F2}");
+        Console.WriteLine($"Total Refunds: ${grandTotalRefunds:F2}");
+        Console.WriteLine($"Final Amount Gruberoo earns: ${finalAmount:F2}");
+        Console.WriteLine();
+    }
+}

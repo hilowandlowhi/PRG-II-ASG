@@ -7,10 +7,10 @@
 
 public class Restaurant
 {
-    private string RestaurantId;
-    private string RestaurantName;
-    private string RestaurantEmail;
-    private Menu Menu;
+    public string RestaurantId;
+    public string RestaurantName;
+    public string RestaurantEmail;
+    public Menu Menu;
 
     public Restaurant(string id, string name, string email)
     {

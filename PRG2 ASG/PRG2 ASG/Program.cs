@@ -572,10 +572,10 @@ class Program
                     Console.Write("Enter Delivery Date (dd/MM/yyyy): ");
                     deliveryDateStr = Console.ReadLine();
 
-                    // Try to parse the date to validate format
+                    
                     DateTime testDate = DateTime.ParseExact(deliveryDateStr, "dd/MM/yyyy", null);
 
-                    // Valid format - exit loop
+                    
                     break;
                 }
                 catch (FormatException)
@@ -590,30 +590,6 @@ class Program
                 }
             }
 
-            while (true)
-            {
-                try
-                {
-                    Console.Write("Enter Delivery Time (HH:mm): ");
-                    deliveryTimeStr = Console.ReadLine();
-
-                    // Try to parse the time to validate format
-                    DateTime testTime = DateTime.ParseExact(deliveryTimeStr, "HH:mm", null);
-
-                    // Valid format - exit loop
-                    break;
-                }
-                catch (FormatException)
-                {
-                    Console.WriteLine("Invalid time format! Please use HH:mm (e.g., 14:30)");
-                    Console.WriteLine("Please try again.\n");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error: {ex.Message}");
-                    Console.WriteLine("Please try again.\n");
-                }
-            }
 
             while (true)
             {
